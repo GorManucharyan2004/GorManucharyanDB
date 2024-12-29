@@ -1,9 +1,10 @@
+import uvicorn
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from . import models, schemas, crud
-from .database import SessionLocal
+from app import models, schemas, crud
+from app.database import SessionLocal
 
 app = FastAPI()
 
@@ -91,3 +92,8 @@ def delete_book(book_id: int, db: Session = Depends(get_db)):
     if db_book is None:
         raise HTTPException(status_code=404, detail="Book not found")
     return db_book
+
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, port=8000)
