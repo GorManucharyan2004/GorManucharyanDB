@@ -38,3 +38,11 @@ class Author(AuthorBase):
 
     class Config:
         orm_mode = True
+
+
+class BookCount(BaseModel):
+    author_name: str
+    book_count: int
+
+    class Config:
+        orm_mode = False

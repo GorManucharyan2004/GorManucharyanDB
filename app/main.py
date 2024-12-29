@@ -2,6 +2,8 @@ import uvicorn
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import date
+from sqlalchemy.orm import joinedload
 
 from app import models, schemas, crud
 from app.database import SessionLocal
@@ -93,6 +95,40 @@ def delete_book(book_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Book not found")
     return db_book
 
+
+@app.get("/books/search/", response_model=List[schemas.Book])
+def search_books(author_id: int, publication_date: date, db: Session = Depends(get_db)):
+    books = crud.get_books_by_author_and_date(db, author_id, publication_date)
+    return books
+
+
+@app.get("/books_with_authors/", response_model=List[schemas.Book])
+def get_books_with_authors(db: Session = Depends(get_db)):
+    books = db.query(models.Book).options(joinedload(models.Book.author)).all()
+    return books
+
+
+@app.put("/books/update_metadata/", response_model=List[schemas.Book])
+def update_books_metadata(author_id: int, new_metadata: dict, db: Session = Depends(get_db)):
+    books = crud.update_books_metadata_by_author(db, author_id, new_metadata)
+    return books
+
+
+@app.get("/books/count_by_author/", response_model=List[schemas.BookCount])
+def count_books_by_author(db: Session = Depends(get_db)):
+    counts = crud.get_book_counts_by_author(db)
+    return [{"author_name": name, "book_count": count} for name, count in counts]
+
+
+@app.get("/books/", response_model=List[schemas.Book])
+def read_books(skip: int = 0, limit: int = 100, sort_by: str = "title", db: Session = Depends(get_db)):
+    query = db.query(models.Book)
+    if sort_by == "publication_date":
+        query = query.order_by(models.Book.publication_date)
+    else:
+        query = query.order_by(models.Book.title)
+    books = query.offset(skip).limit(limit).all()
+    return books
 
 
 if __name__ == "__main__":

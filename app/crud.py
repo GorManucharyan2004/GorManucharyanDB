@@ -1,4 +1,7 @@
 from sqlalchemy.orm import Session
+from datetime import date
+from sqlalchemy import func
+
 from . import models, schemas
 
 
@@ -68,3 +71,25 @@ def delete_book(db: Session, book_id: int):
         db.delete(db_book)
         db.commit()
     return db_book
+
+
+def get_books_by_author_and_date(db: Session, author_id: int, publication_date: date):
+    return db.query(models.Book).filter(
+        models.Book.author_id == author_id,
+        models.Book.publication_date == publication_date
+    ).all()
+
+
+def update_books_metadata_by_author(db: Session, author_id: int, new_metadata: dict):
+    books = db.query(models.Book).filter(models.Book.author_id == author_id).all()
+    for book in books:
+        if book.metadata:
+            book.metadata.update(new_metadata)
+        else:
+            book.metadata = new_metadata
+    db.commit()
+    return books
+
+
+def get_book_counts_by_author(db: Session):
+    return db.query(models.Author.name, func.count(models.Book.id)).join(models.Book).group_by(models.Author.id).all()
