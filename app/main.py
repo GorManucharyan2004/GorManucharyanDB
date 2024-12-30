@@ -131,5 +131,11 @@ def read_books(skip: int = 0, limit: int = 100, sort_by: str = "title", db: Sess
     return books
 
 
+@app.get("/books/search_metadata/", response_model=List[schemas.Book])
+def search_books_metadata(query: str, db: Session = Depends(get_db)):
+    books = crud.search_books_metadata(db, query)
+    return books
+
+
 if __name__ == "__main__":
     uvicorn.run(app, port=8000)

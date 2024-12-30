@@ -93,3 +93,9 @@ def update_books_metadata_by_author(db: Session, author_id: int, new_metadata: d
 
 def get_book_counts_by_author(db: Session):
     return db.query(models.Author.name, func.count(models.Book.id)).join(models.Book).group_by(models.Author.id).all()
+
+
+def search_books_metadata(db: Session, query: str):
+    return db.query(models.Book).filter(models.Book.metadata.like(f"%{query}%")).all()
+
+
