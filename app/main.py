@@ -1,5 +1,8 @@
 import uvicorn
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import date
@@ -9,6 +12,8 @@ from app import models, schemas, crud
 from app.database import SessionLocal
 
 app = FastAPI()
+templates = Jinja2Templates(directory="ui/templates")
+app.mount("/static", StaticFiles(directory="ui/static"), name="static")
 
 
 def get_db():
@@ -17,6 +22,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@app.get("/", response_class=HTMLResponse)
+def read_root(request: Request, db: Session = Depends(get_db)):
+    authors = crud.get_authors(db, skip=0, limit=100)
+    books = db.query(models.Book).options(joinedload(models.Book.author)).all()
+    return templates.TemplateResponse("index.html", {"request": request, "authors": authors, "books": books})
 
 
 @app.post("/authors/", response_model=schemas.Author)
@@ -55,10 +67,10 @@ def delete_author(author_id: int, db: Session = Depends(get_db)):
     return db_author
 
 
-@app.post("/books/", response_model=schemas.Book)
-def create_book(book: schemas.BookCreate, db: Session = Depends(get_db)):
-    db_book = crud.create_book(db, book)
-    return db_book
+@app.get("/books/", response_model=List[schemas.Book])
+def read_books(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    books = crud.get_books(db, skip=skip, limit=limit)
+    return books
 
 
 @app.get("/books/", response_model=List[schemas.Book])
